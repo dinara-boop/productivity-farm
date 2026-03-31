@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Productivity Farm",
+  "version": "0.1.0",
+  "description": "MVP трекинг активности для фермы продуктивности",
+  "permissions": ["tabs", "storage", "alarms", "idle"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
