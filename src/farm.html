@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ферма продуктивности</title>
+    <style>
+      :root { font-family: Arial, sans-serif; }
+      body { margin: 0; background: #f7fbff; color: #1a2c40; }
+      header { padding: 16px 20px; background: #d8ecff; display: flex; gap: 24px; align-items: center; }
+      main { padding: 20px; display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 16px; }
+      section { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 4px 14px rgba(19,57,95,0.1); }
+      h2,h3 { margin-top: 0; }
+      ul { margin: 0; padding-left: 18px; }
+      button { padding: 8px 10px; margin-top: 8px; cursor: pointer; }
+      .monster { font-size: 56px; text-align: center; }
+      .line { margin: 6px 0; }
+      .task { border: 1px solid #d8ecff; border-radius: 8px; margin-bottom: 10px; padding: 10px; }
+      .small { font-size: 12px; color: #4b5a69; }
+      .row { display: flex; gap: 8px; }
+      .row input { flex: 1; }
+      textarea { width: 100%; min-height: 70px; }
+      #feedback { margin-top: 8px; font-size: 12px; color: #0a4f91; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>🌱 Ферма продуктивности</strong>
+      <div id="headerDomain">Домен: —</div>
+      <div id="headerDomainType">Тип: neutral</div>
+      <div id="headerPoints">Очки: 0</div>
+    </header>
+
+    <main>
+      <section>
+        <h2>Активный монстр</h2>
+        <div class="monster" id="monsterEmoji">🥚</div>
+        <div class="line" id="monsterStage">Стадия: 1/4</div>
+        <div class="line" id="monsterMood">Настроение: normal</div>
+        <div class="line small" id="monsterGrowth">Рост: 0 ед.</div>
+        <button id="reviveBtn">Восстановить монстра</button>
+      </section>
+
+      <section>
+        <h3>Создать задачу</h3>
+        <div class="row"><input id="taskTitle" placeholder="Название задачи" /></div>
+        <div class="row"><input id="microtasks" placeholder="Микрозадачи через ;" /></div>
+        <button id="createTaskBtn">Создать задачу</button>
+        <div id="feedback"></div>
+
+        <h3>Хорошие и плохие сайты</h3>
+        <div class="small">По одному домену на строку (например: docs.google.com)</div>
+        <div class="small">Хорошие сайты</div>
+        <textarea id="goodDomains"></textarea>
+        <div class="small">Плохие сайты</div>
+        <textarea id="badDomains"></textarea>
+        <button id="saveDomainsBtn">Сохранить списки сайтов</button>
+
+        <h3>Задачи</h3>
+        <div id="tasks"></div>
+      </section>
+
+      <section>
+        <h3>Достижения</h3>
+        <ul>
+          <li id="achFocus">10 мин без отвлечений: 0</li>
+          <li id="achStreak">3 задачи подряд: 0</li>
+          <li id="achMax">Макс уровень монстра: 0</li>
+        </ul>
+
+        <h3>Магазин</h3>
+        <div id="shop"></div>
+
+        <h3>Инвентарь</h3>
+        <div id="inventory" class="small"></div>
+      </section>
+    </main>
+
+    <script type="module" src="farm.js"></script>
+  </body>
+</html>
