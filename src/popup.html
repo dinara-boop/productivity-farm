@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Productivity Farm</title>
+    <style>
+      body { font-family: Arial, sans-serif; width: 300px; margin: 12px; }
+      button { margin-top: 8px; width: 100%; padding: 8px; }
+      .muted { color: #666; font-size: 12px; }
+      .status { padding: 8px; border-radius: 8px; background: #f3f8ff; margin-bottom: 8px; }
+    </style>
+  </head>
+  <body>
+    <h3>Ферма продуктивности</h3>
+    <div class="status">
+      <div id="monsterState">Состояние: ...</div>
+      <div id="domain">Текущий домен: ...</div>
+      <div class="muted" id="domainType">Тип: ...</div>
+      <div class="muted" id="activeTask">Активная задача: ...</div>
+    </div>
+    <button id="pauseBtn">Пауза трекинга</button>
+    <button id="openFarmBtn">Перейти в ферму</button>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
