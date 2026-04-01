@@ -29,6 +29,13 @@ export const INITIAL_STATE: TrackingState = {
   paused: false
 };
 
+export function growthToStage(growthUnits: number): 1 | 2 | 3 | 4 {
+  if (growthUnits >= 3) return 4;
+  if (growthUnits === 2) return 3;
+  if (growthUnits === 1) return 2;
+  return 1;
+}
+
 export function applyTick(
   state: TrackingState,
   domainType: DomainType,

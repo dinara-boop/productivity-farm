@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json && cp src/popup.html dist/popup.html && cp manifest.json dist/manifest.json",
+    "build": "tsc -p tsconfig.json && cp src/popup.html dist/popup.html && cp src/farm.html dist/farm.html && cp manifest.json dist/manifest.json",
     "test": "vitest run"
   },
   "devDependencies": {

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { INITIAL_STATE, applyTick, classifyDomain, extractDomain, resetDeadMonster } from "../src/lib/tracker";
+import {
+  INITIAL_STATE,
+  applyTick,
+  classifyDomain,
+  extractDomain,
+  growthToStage,
+  resetDeadMonster
+} from "../src/lib/tracker";
 
 describe("tracker domain helpers", () => {
   it("extracts domain from valid url", () => {
@@ -46,5 +53,13 @@ describe("tracker state machine", () => {
     const next = applyTick(paused, "good", 45 * 60 * 1000);
     expect(next.growthUnits).toBe(0);
     expect(next.goodMs).toBe(0);
+  });
+
+  it("maps growth units to 4 monster stages", () => {
+    expect(growthToStage(0)).toBe(1);
+    expect(growthToStage(1)).toBe(2);
+    expect(growthToStage(2)).toBe(3);
+    expect(growthToStage(3)).toBe(4);
+    expect(growthToStage(7)).toBe(4);
   });
 });

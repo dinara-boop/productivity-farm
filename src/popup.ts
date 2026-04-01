@@ -34,7 +34,7 @@ function setupActions(): void {
   });
 
   openFarmBtn?.addEventListener("click", async () => {
-    await chrome.tabs.create({ url: "https://example.com/farm" });
+    await chrome.tabs.create({ url: chrome.runtime.getURL("farm.html") });
   });
 }
 
