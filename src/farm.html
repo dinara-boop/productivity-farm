@@ -4,65 +4,292 @@
     <meta charset="UTF-8" />
     <title>Ферма продуктивности</title>
     <style>
-      :root { font-family: Arial, sans-serif; }
-      body { margin: 0; background: #f7fbff; color: #1a2c40; }
-      header { padding: 16px 20px; background: #d8ecff; display: flex; gap: 24px; align-items: center; }
-      main { padding: 20px; display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 16px; }
-      section { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 4px 14px rgba(19,57,95,0.1); }
-      h2,h3 { margin-top: 0; }
-      ul { margin: 0; padding-left: 18px; }
-      button { padding: 8px 10px; margin-top: 8px; cursor: pointer; }
-      .monster { font-size: 56px; text-align: center; }
-      .line { margin: 6px 0; }
-      .task { border: 1px solid #d8ecff; border-radius: 8px; margin-bottom: 10px; padding: 10px; }
+      :root {
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        background: #7db23d;
+        --primary: #ffae00;
+        --farm-bg-image: url("./assets/farm-bg.png");
+        --farm-bg-backdrop:
+          radial-gradient(circle at center, rgba(201, 229, 106, 0.68) 0%, rgba(109, 164, 52, 0.36) 58%, rgba(57, 107, 42, 0.82) 100%);
+      }
+
+      html { width: 100%; height: 100%; overflow: hidden; }
+      html, body { margin: 0; padding: 0; }
+      body { margin: 0; min-height: 100vh; min-height: 100dvh; width: 100vw; background: #7db23d; color: #1a2c40; overflow: hidden; }
+      body.modal-open { overflow: hidden; }
+      main { height: 100vh; height: 100dvh; width: 100vw; padding: 0; box-sizing: border-box; overflow: hidden; background: var(--farm-bg-backdrop); }
+      button { padding: 8px 12px; cursor: pointer; font: inherit; }
+      button:disabled { cursor: not-allowed; opacity: 0.45; }
+      input, textarea { width: 100%; box-sizing: border-box; font: inherit; }
+      textarea { min-height: 88px; resize: vertical; }
+      h1, h2, h3, p { margin-top: 0; }
+      .stack { display: grid; gap: 12px; }
+      .row { display: flex; gap: 12px; align-items: center; }
+      .grow { flex: 1; }
+      .screen { display: grid; width: 100%; height: 100%; min-height: 0; overflow: hidden; background: transparent; }
+      .screen[hidden],
+      .panel[hidden],
+      .modal[hidden] { display: none; }
+      .notice { min-height: 18px; font-size: 12px; color: #1f5f2c; }
+      .notice.error { color: #9f2d20; }
+      .panel-box { border: 0; outline: 0; border-radius: 0; padding: 0; min-height: 0; box-sizing: border-box; box-shadow: none; }
+      #homeScreen > .panel-box { position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 0; width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; background: transparent; }
+      #homeScreen > .panel-box > .farm-section { grid-row: 1 / -1; grid-column: 1; }
+      #homeScreen > .panel-box > .notice { position: absolute; z-index: 4; left: clamp(12px, 2vw, 24px); right: clamp(12px, 2vw, 24px); bottom: clamp(66px, 8vh, 88px); min-height: 18px; padding: 0 8px; text-align: center; pointer-events: none; }
+
+      .farm-toolbar-shell { position: absolute; z-index: 5; top: 0; left: 0; right: 0; display: flex; justify-content: center; padding: 0 clamp(12px, 2vw, 24px); pointer-events: none; }
+      .farm-toolbar-shell::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 100%); pointer-events: none; }
+      .farm-toolbar { position: relative; width: min(100%, 2416px); min-height: 60px; margin-top: max(0px, calc(clamp(12px, 3vw, 72px) - 20px)); display: flex; align-items: center; gap: 60px; pointer-events: auto; }
+      .farm-toolbar > [data-action] { display: inline-flex; align-items: center; justify-content: center; height: 45px; padding: 0 clamp(18px, 2vw, 40px); box-sizing: border-box; border: 0; border-radius: 14px; background: var(--primary); color: #ffffff; font-family: "Nunito", "Arial Rounded MT Bold", Arial, sans-serif; font-size: 22px; font-weight: 900; line-height: 1; box-shadow: inset 4px 4px 4px rgba(255, 255, 255, 0.4), inset -4px -4px 4px rgba(10, 0, 47, 0.25), 0 12px 24px rgba(0, 0, 0, 0.18); text-shadow: 0 1px 1px rgba(110, 62, 0, 0.28); transition: transform 120ms ease, filter 120ms ease; }
+      .farm-toolbar > [data-action]:hover { transform: translateY(-1px); filter: brightness(1.03); }
+      .farm-toolbar > [data-action="open-achievements"] { margin-left: auto; }
+      .grow { display: inline-flex; align-items: center; justify-content: center; gap: 12px; flex: 0 0 auto; color: #ffffff; }
+      .grow::before { content: ""; width: 45px; height: 45px; background: url("./assets/bonus-icon.svg") center / contain no-repeat; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.22)); }
+      .grow strong { display: none; }
+      .farm-toolbar [data-role="farm-points"] { color: #ffffff; font-family: "Nunito", "Arial Rounded MT Bold", Arial, sans-serif; font-size: 22px; font-weight: 900; line-height: 1; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.28); }
+
+      .farm-section { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 0; min-height: 0; }
+      .farm-field { position: relative; width: 100%; height: calc(100% + 4px); min-height: calc(100% + 4px); margin-bottom: -4px; border: 0; outline: 0; border-radius: 0; overflow: hidden; background: var(--farm-bg-backdrop); box-shadow: none; --field-bg-image: var(--farm-bg-image); }
+      .farm-field::before { content: ""; position: absolute; z-index: 0; inset: 0; background: var(--field-bg-image) center / cover no-repeat; filter: blur(20px) saturate(1.04); transform: scale(1.08); opacity: 0.38; pointer-events: none; }
+      .farm-field::after { content: ""; position: absolute; z-index: 1; inset: 0; background: var(--field-bg-image) center / cover no-repeat; pointer-events: none; }
+
+      .farm-card { position: absolute; z-index: 2; left: var(--slot-x); top: var(--slot-y); transform: translate(-50%, calc(-50% + var(--slot-y-offset, 0px))); width: clamp(180px, 28%, 320px); aspect-ratio: 2.85 / 1; }
+      .farm-card-pen { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; transform: scale(2); transform-origin: center; filter: drop-shadow(0 14px 20px rgba(26, 44, 64, 0.22)); pointer-events: none; user-select: none; }
+      .farm-card-content { position: absolute; z-index: 1; inset: 16% 15% 22% 15%; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+      .farm-card-task,
+      .farm-card-create-button { pointer-events: auto; }
+      .farm-card-task { width: 100%; min-height: 100%; padding: 0; border: 0; border-radius: 0; display: grid; gap: 5px; align-content: center; justify-items: center; text-align: center; background: transparent; box-shadow: none; backdrop-filter: none; transition: transform 120ms ease, opacity 120ms ease, filter 120ms ease; }
+      .farm-card.clickable .farm-card-task:hover { transform: translateY(-2px); filter: brightness(1.04); }
+      .farm-card.completed .farm-card-task { opacity: 1; }
+      .farm-card.empty-slot .farm-card-create-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: auto;
+        max-width: 100%;
+        height: 45px;
+        padding: 0 clamp(18px, 2vw, 40px);
+        box-sizing: border-box;
+        border: 0;
+        border-radius: 14px;
+        background: #0077ff;
+        color: #ffffff;
+        font-family: "Nunito", "Arial Rounded MT Bold", Arial, sans-serif;
+        font-size: 22px;
+        font-weight: 900;
+        line-height: 1;
+        box-shadow:
+          inset 4px 4px 4px rgba(255, 255, 255, 0.4),
+          inset -4px -4px 4px rgba(0, 44, 122, 0.25),
+          0 12px 24px rgba(0, 58, 153, 0.24);
+        text-shadow: 0 1px 1px rgba(0, 40, 110, 0.28);
+        white-space: nowrap;
+        transform: translate(-10px, -20px);
+        transition: transform 120ms ease, filter 120ms ease;
+      }
+      .farm-card.empty-slot .farm-card-create-button:hover { transform: translate(-10px, -21px); filter: brightness(1.03); }
+      .farm-card.empty-slot .farm-card-create-button:active { transform: translate(-10px, -20px); filter: brightness(0.96); }
+      .farm-card-task-monster-shell { width: 300px; height: 300px; transform: translate(-30px, -190px); margin-bottom: -190px; margin-left: -30px; }
+      .farm-card-task-monster { width: 100%; height: 100%; object-fit: contain; }
+      .farm-card-task-title { max-width: 100%; font-size: 14px; font-weight: 700; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-wrap: balance; color: #ffffff; text-shadow: 0 2px 8px rgba(26, 44, 64, 0.45); }
+      .farm-card-task-status { font-size: 11px; color: #e8f2ff; text-transform: lowercase; text-shadow: 0 2px 8px rgba(26, 44, 64, 0.45); }
+      .farm-card.active .farm-card-task-status { color: #d5ffe5; }
+      .farm-card.completed .farm-card-task-status { color: #f0f0f0; }
+      .monster-transition-host { position: relative; display: block; isolation: isolate; }
+      .monster-transition__viewport { position: relative; display: block; width: 100%; height: 100%; }
+      .monster-transition__layer { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; transform-origin: 50% 50%; will-change: opacity, transform, filter; }
+      .monster-transition__layer--stage-enter { animation: monster-stage-enter 360ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+      .monster-transition__layer--stage-exit { animation: monster-stage-exit 320ms ease-out both; }
+      .monster-transition__layer--state-enter { animation: monster-state-enter 220ms ease-out both; }
+      .monster-transition__layer--state-exit { animation: monster-state-exit 220ms ease-out both; }
+      .monster-transition__glow { position: absolute; inset: 12%; border-radius: 999px; pointer-events: none; background: radial-gradient(circle, rgba(255, 228, 150, 0.45) 0%, rgba(255, 228, 150, 0) 72%); filter: blur(10px); animation: monster-stage-glow 220ms ease-out both; }
+
+      @keyframes monster-stage-enter {
+        0% { opacity: 0; transform: scale(0.92); filter: drop-shadow(0 0 0 rgba(255, 214, 120, 0)); }
+        68% { opacity: 1; transform: scale(1.04); filter: drop-shadow(0 0 14px rgba(255, 214, 120, 0.5)); }
+        100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 0 rgba(255, 214, 120, 0)); }
+      }
+
+      @keyframes monster-stage-exit {
+        0% { opacity: 1; transform: scale(1); }
+        100% { opacity: 0; transform: scale(0.98); }
+      }
+
+      @keyframes monster-state-enter {
+        0% { opacity: 0; }
+        100% { opacity: 1; }
+      }
+
+      @keyframes monster-state-exit {
+        0% { opacity: 1; }
+        100% { opacity: 0; }
+      }
+
+      @keyframes monster-stage-glow {
+        0% { opacity: 0; }
+        30% { opacity: 1; }
+        100% { opacity: 0; }
+      }
+
+      .farm-navigation-shell { position: absolute; z-index: 5; left: 0; right: 0; bottom: 0; display: flex; align-items: flex-end; justify-content: center; height: clamp(180px, 22vh, 284px); padding: 0 clamp(12px, 2vw, 24px); pointer-events: none; }
+      .farm-navigation-shell::before { content: ""; position: absolute; z-index: 0; inset: 0; background: linear-gradient(0deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 100%); pointer-events: none; }
+      .farm-navigation { width: min(100%, 2416px); min-height: 44px; margin-bottom: clamp(16px, 5vh, 52px); display: flex; align-items: center; justify-content: space-between; gap: 18px; pointer-events: auto; }
+      .farm-navigation > * { position: relative; z-index: 1; }
+      .farm-nav-button { position: relative; z-index: 2; width: 44px; height: 44px; min-width: 44px; padding: 0; border: 0; border-radius: 8px; background: var(--primary); display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18), inset 2px 2px 2px rgba(255, 255, 255, 0.22), inset -2px -2px 2px rgba(10, 0, 47, 0.2); color: #ffffff; }
+      .farm-nav-button-icon { width: 20px; height: 20px; object-fit: contain; display: block; }
+      .farm-field-name { flex: 1; text-align: center; color: #ffffff; font-family: "Nunito", "Arial Rounded MT Bold", Arial, sans-serif; font-size: 24px; font-weight: 900; line-height: 1.1; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
+      .farm-field-name.farm-field-sign { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); flex: none; width: min(26vw, 367px); max-width: calc(100vw - 24px); text-shadow: none; pointer-events: none; }
+      .farm-field-sign-image { display: block; width: 100%; height: auto; }
+
       .small { font-size: 12px; color: #4b5a69; }
-      .row { display: flex; gap: 8px; }
-      .row input { flex: 1; }
+      .task-card { border: 1px solid #d8e3ef; border-radius: 12px; padding: 16px; display: grid; gap: 12px; }
+      .task-monster-shell { width: 300px; height: 300px; transform: translate(-30px, -190px); margin-bottom: -190px; margin-left: -30px; }
+      .task-monster { width: 100%; height: 100%; object-fit: contain; }
+      .task-checklist,
+      .task-select-list,
+      .checklist-editor { display: grid; gap: 8px; }
+      .task-checklist-item,
+      .task-select-item,
+      .checklist-editor-row { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; }
+      .task-select-item { grid-template-columns: 1fr auto; padding: 12px; border: 1px solid #d8e3ef; border-radius: 10px; }
+      .checklist-editor-row input[type="text"] { min-height: 38px; padding: 8px 10px; }
+      .inline-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+      .secondary-button { background: #f2f6fa; }
+      .ghost-button { background: transparent; border: 1px solid #d8e3ef; }
+      .modal { position: fixed; z-index: 10; inset: 0; background: rgba(17, 33, 51, 0.35); display: grid; place-items: center; padding: 20px; box-sizing: border-box; }
+      .modal-card { position: relative; width: min(100%, 640px); max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow: auto; background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 20px 40px rgba(17, 33, 51, 0.18); }
+      .modal-close { position: absolute; top: 12px; right: 12px; min-width: 36px; padding: 6px 10px; }
+      .modal-panel[hidden] { display: none; }
+      .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+
+      @media (max-width: 640px) {
+        .farm-toolbar-shell { padding: 0 8px; }
+        .farm-toolbar { margin-top: 0; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+        .farm-toolbar > [data-action] { height: 45px; padding: 0 18px; border-radius: 14px; font-size: 22px; }
+        .farm-toolbar > [data-action="open-achievements"] { margin-left: 0; }
+        .grow { width: 100%; }
+        .farm-navigation-shell { height: 160px; padding: 0 8px; }
+        .farm-navigation { margin-bottom: 16px; gap: 12px; min-height: 60px; }
+        .farm-field-name { font-size: 18px; }
+        .farm-field-name.farm-field-sign { width: min(31vw, 253px); max-width: calc(100vw - 16px); }
+        .modal { padding: 10px; }
+        .modal-card { max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px); padding: 16px; }
+        .farm-card { width: clamp(148px, 40%, 244px); }
+        .farm-card-content { inset: 15% 13% 20% 13%; }
+        .farm-card-task { padding: 10px 12px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .monster-transition__layer--stage-enter,
+        .monster-transition__layer--stage-exit,
+        .monster-transition__layer--state-enter,
+        .monster-transition__layer--state-exit,
+        .monster-transition__glow {
+          animation: none !important;
+        }
+      }
     </style>
   </head>
   <body>
-    <header>
-      <strong>🌱 Ферма продуктивности</strong>
-      <div id="headerDomain">Домен: —</div>
-      <div id="headerDomainType">Тип: neutral</div>
-      <div id="headerPoints">Очки: 0</div>
-    </header>
-
     <main>
-      <section>
-        <h2>Активный монстр</h2>
-        <div class="monster" id="monsterEmoji">🥚</div>
-        <div class="line" id="monsterStage">Стадия: 1/4</div>
-        <div class="line" id="monsterMood">Настроение: normal</div>
-        <div class="line small" id="monsterGrowth">Рост: 0 ед.</div>
-        <button id="reviveBtn">Восстановить монстра</button>
-      </section>
+      <section id="homeScreen" class="screen">
+        <div class="panel-box stack">
+          <div class="farm-toolbar-shell" data-role="farm-toolbar">
+            <div class="farm-toolbar">
+              <button type="button" data-action="open-shop">Магазин</button>
+              <div class="grow"><strong>Бонусы:</strong> <span data-role="farm-points">0</span></div>
+              <button type="button" data-action="open-achievements">Достижения</button>
+            </div>
+          </div>
 
-      <section>
-        <h3>Создать задачу</h3>
-        <div class="row"><input id="taskTitle" placeholder="Название задачи" /></div>
-        <div class="row"><input id="microtasks" placeholder="Микрозадачи через ;" /></div>
-        <button id="createTaskBtn">Создать задачу</button>
+          <div class="farm-section">
+            <div id="homeFarmField" class="farm-field"></div>
 
-        <h3>Задачи</h3>
-        <div id="tasks"></div>
-      </section>
+            <div class="farm-navigation-shell">
+              <div class="farm-navigation">
+                <button id="homeFarmPrevBtn" type="button" class="farm-nav-button" aria-label="Предыдущее поле">
+                  <img class="farm-nav-button-icon" src="./assets/nav-left.svg" alt="" aria-hidden="true" />
+                </button>
 
-      <section>
-        <h3>Достижения</h3>
-        <ul>
-          <li id="achFocus">10 мин без отвлечений: 0</li>
-          <li id="achStreak">3 задачи подряд: 0</li>
-          <li id="achMax">Макс уровень монстра: 0</li>
-        </ul>
+                <div id="homeFarmFieldName" class="farm-field-name">Цветочный сад</div>
 
-        <h3>Магазин</h3>
-        <div id="shop"></div>
+                <button id="homeFarmNextBtn" type="button" class="farm-nav-button" aria-label="Следующее поле">
+                  <img class="farm-nav-button-icon" src="./assets/nav-right.svg" alt="" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </div>
 
-        <h3>Инвентарь</h3>
-        <div id="inventory" class="small"></div>
+          <div id="homeFarmNotice" class="notice"></div>
+        </div>
       </section>
     </main>
+
+    <div id="taskModal" class="modal" hidden>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle">
+        <button id="closeTaskModalBtn" type="button" class="modal-close secondary-button" aria-label="Закрыть">x</button>
+        <h3 id="taskModalTitle">Задача</h3>
+
+        <div id="createTaskModalContent" class="modal-panel stack" hidden>
+          <div class="stack">
+            <label for="taskTitle">Название задачи</label>
+            <input id="taskTitle" placeholder="Название задачи" />
+          </div>
+          <div class="task-card">
+            <img class="task-monster" id="createTaskMonsterImage" alt="" />
+            <div class="small">Новый монстрик для задачи</div>
+          </div>
+          <div class="stack">
+            <label>Чек-лист</label>
+            <p class="small">Нажмите Enter, чтобы добавить следующую строку.</p>
+            <div id="checklistDraftRows" class="checklist-editor"></div>
+          </div>
+          <div class="stack">
+            <label for="goodDomains">Хорошие сайты</label>
+            <textarea id="goodDomains" placeholder="docs.google.com&#10;github.com"></textarea>
+          </div>
+          <div class="stack">
+            <label for="badDomains">Плохие сайты</label>
+            <textarea id="badDomains" placeholder="youtube.com&#10;reddit.com"></textarea>
+          </div>
+          <button id="saveTaskBtn" type="button">Сохранить задачу</button>
+          <div id="taskFormNotice" class="notice"></div>
+        </div>
+
+        <div id="activeTaskModalContent" class="modal-panel stack" hidden>
+          <div id="activeTaskContent" class="task-card"></div>
+          <div id="activeTaskNotice" class="notice"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="shopModal" class="modal" hidden>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="shopModalTitle">
+        <button id="closeShopModalBtn" type="button" class="modal-close secondary-button" aria-label="Закрыть">x</button>
+        <h3 id="shopModalTitle">Магазин</h3>
+        <div id="shopContent" class="stack"></div>
+      </div>
+    </div>
+
+    <div id="achievementsModal" class="modal" hidden>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="achievementsModalTitle">
+        <button
+          id="closeAchievementsModalBtn"
+          type="button"
+          class="modal-close secondary-button"
+          aria-label="Закрыть"
+        >
+          x
+        </button>
+        <h3 id="achievementsModalTitle">Достижения</h3>
+        <div id="achievementsContent" class="stack"></div>
+      </div>
+    </div>
 
     <script type="module" src="farm.js"></script>
   </body>

@@ -2,24 +2,187 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <title>Productivity Farm</title>
+    <title>Ферма продуктивности</title>
     <style>
-      body { font-family: Arial, sans-serif; width: 300px; margin: 12px; }
-      button { margin-top: 8px; width: 100%; padding: 8px; }
-      .muted { color: #666; font-size: 12px; }
-      .status { padding: 8px; border-radius: 8px; background: #f3f8ff; margin-bottom: 8px; }
+      :root {
+        color-scheme: light;
+        font-family: Arial, sans-serif;
+      }
+
+      body {
+        width: 300px;
+        margin: 0;
+        padding: 16px;
+        background: #fffaf2;
+        color: #2f2a1f;
+      }
+
+      .stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 20px;
+      }
+
+      .monster-card {
+        padding: 14px;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #fff4d6 0%, #f2f7ff 100%);
+        text-align: center;
+      }
+
+      .monster-image-shell {
+        width: 96px;
+        height: 96px;
+        margin: 0 auto 8px;
+      }
+
+      .monster-image {
+        width: 96px;
+        height: 96px;
+        object-fit: contain;
+      }
+
+      .monster-transition-host {
+        position: relative;
+        display: block;
+        isolation: isolate;
+      }
+
+      .monster-transition__viewport {
+        position: relative;
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .monster-transition__layer {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        transform-origin: 50% 50%;
+        will-change: opacity, transform, filter;
+      }
+
+      .monster-transition__layer--stage-enter {
+        animation: monster-stage-enter 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+
+      .monster-transition__layer--stage-exit {
+        animation: monster-stage-exit 320ms ease-out both;
+      }
+
+      .monster-transition__layer--state-enter {
+        animation: monster-state-enter 220ms ease-out both;
+      }
+
+      .monster-transition__layer--state-exit {
+        animation: monster-state-exit 220ms ease-out both;
+      }
+
+      .monster-transition__glow {
+        position: absolute;
+        inset: 12%;
+        border-radius: 999px;
+        pointer-events: none;
+        background: radial-gradient(circle, rgba(255, 228, 150, 0.45) 0%, rgba(255, 228, 150, 0) 72%);
+        filter: blur(10px);
+        animation: monster-stage-glow 220ms ease-out both;
+      }
+
+      @keyframes monster-stage-enter {
+        0% { opacity: 0; transform: scale(0.92); filter: drop-shadow(0 0 0 rgba(255, 214, 120, 0)); }
+        68% { opacity: 1; transform: scale(1.04); filter: drop-shadow(0 0 14px rgba(255, 214, 120, 0.5)); }
+        100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 0 rgba(255, 214, 120, 0)); }
+      }
+
+      @keyframes monster-stage-exit {
+        0% { opacity: 1; transform: scale(1); }
+        100% { opacity: 0; transform: scale(0.98); }
+      }
+
+      @keyframes monster-state-enter {
+        0% { opacity: 0; }
+        100% { opacity: 1; }
+      }
+
+      @keyframes monster-state-exit {
+        0% { opacity: 1; }
+        100% { opacity: 0; }
+      }
+
+      @keyframes monster-stage-glow {
+        0% { opacity: 0; }
+        30% { opacity: 1; }
+        100% { opacity: 0; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .monster-transition__layer--stage-enter,
+        .monster-transition__layer--stage-exit,
+        .monster-transition__layer--state-enter,
+        .monster-transition__layer--state-exit,
+        .monster-transition__glow {
+          animation: none !important;
+        }
+      }
+
+      .task-title {
+        font-size: 16px;
+        font-weight: 700;
+      }
+
+      .muted {
+        color: #5f5a4f;
+        font-size: 13px;
+      }
+
+      .actions {
+        display: grid;
+        gap: 8px;
+      }
+
+      button {
+        width: 100%;
+        padding: 10px 12px;
+        border: 0;
+        border-radius: 10px;
+        background: #3057d5;
+        color: #ffffff;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        background: #e8ecf8;
+        color: #21315f;
+      }
     </style>
   </head>
   <body>
-    <h3>Ферма продуктивности</h3>
-    <div class="status">
-      <div id="monsterState">Состояние: ...</div>
-      <div id="domain">Текущий домен: ...</div>
-      <div class="muted" id="domainType">Тип: ...</div>
-      <div class="muted" id="activeTask">Активная задача: ...</div>
+    <div class="stack">
+      <h1 id="popupTitle">Ферма продуктивности</h1>
+
+      <section id="taskCard" class="stack" hidden>
+        <div class="monster-card">
+          <div id="monsterImageHost" class="monster-image-shell" hidden></div>
+          <div id="taskTitle" class="task-title"></div>
+          <div id="monsterState" class="muted"></div>
+          <div id="elapsedTime" class="muted"></div>
+        </div>
+
+        <button id="taskActionBtn"></button>
+      </section>
+
+      <div class="actions">
+        <button id="openFarmBtn" class="secondary">Перейти в ферму</button>
+      </div>
     </div>
-    <button id="pauseBtn">Пауза трекинга</button>
-    <button id="openFarmBtn">Перейти в ферму</button>
 
     <script type="module" src="popup.js"></script>
   </body>

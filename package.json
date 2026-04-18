@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json && cp src/popup.html dist/popup.html && cp src/farm.html dist/farm.html && cp manifest.json dist/manifest.json",
+    "build": "tsc -p tsconfig.json && node -e \"const fs=require('fs'); fs.cpSync('src/popup.html','dist/popup.html'); fs.cpSync('src/farm.html','dist/farm.html'); if (fs.existsSync('src/assets')) fs.cpSync('src/assets','dist/assets',{recursive:true}); fs.cpSync('manifest.json','dist/manifest.json');\"",
     "test": "vitest run"
   },
   "devDependencies": {

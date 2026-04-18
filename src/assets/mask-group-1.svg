@@ -1,0 +1,19 @@
+<svg width="72" height="70" viewBox="0 0 72 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="coinGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(29 22) rotate(51.843) scale(39.5636 39.0134)">
+      <stop stop-color="#FFF3B0"/>
+      <stop offset="0.55" stop-color="#FFD34D"/>
+      <stop offset="1" stop-color="#FF9F1A"/>
+    </radialGradient>
+    <linearGradient id="coinFace" x1="14" y1="7" x2="55" y2="61" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE58A"/>
+      <stop offset="1" stop-color="#F18F01"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="36" cy="60.5" rx="18" ry="6.5" fill="#53360A" fill-opacity="0.28"/>
+  <path d="M20 17.5C20 12.2533 24.2533 8 29.5 8H41.1125C45.3144 8 49.0335 10.7609 50.2525 14.7819L55.1141 30.8221C56.4415 35.1994 53.166 39.6562 48.592 39.6562H23.5C18.2533 39.6562 14 35.4029 14 30.1562V17.5H20Z" fill="url(#coinGlow)"/>
+  <path d="M18 19.4102C18 14.7158 21.8056 10.9102 26.5 10.9102H38.1125C41.0258 10.9102 43.6252 12.7837 44.4876 15.5664L49.3492 31.2482C50.2946 34.2985 48.013 37.4102 44.8198 37.4102H26.5C21.8056 37.4102 18 33.6046 18 28.9102V19.4102Z" fill="url(#coinFace)"/>
+  <circle cx="46.5" cy="46.5" r="13.5" fill="#F18F01"/>
+  <circle cx="46.5" cy="46.5" r="11" fill="#FFD34D"/>
+  <path d="M46.5 38L48.8974 43.1541L54.5 44.0068L50.5 47.9924L51.4443 53.5L46.5 50.7404L41.5557 53.5L42.5 47.9924L38.5 44.0068L44.1026 43.1541L46.5 38Z" fill="#FFF8D6"/>
+</svg>

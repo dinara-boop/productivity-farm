@@ -1,16 +1,35 @@
-import { growthToStage, type TrackingState } from "./tracker";
+import { sanitizeChecklistItems } from "./checklist.js";
+import { findFirstFreeFarmSlot, isFarmSlotOccupied, isValidFarmPlacement, type FarmPlacement } from "./farm-fields.js";
+import { DEFAULT_THRESHOLDS, growthToStage, type TrackingState } from "./tracker.js";
 
 export type ItemId = "green-hat" | "blue-glasses" | "legendary-crown" | "streak-ribbon";
+export type TaskStatus = "active" | "paused" | "completed";
+export type TaskOperationError =
+  | "active-task-exists"
+  | "task-not-found"
+  | "task-completed"
+  | "task-not-active"
+  | "farm-full"
+  | "task-slot-unavailable";
+
+export type TaskOperationResult =
+  | { ok: true; game: GameState; task: Task }
+  | { ok: false; error: TaskOperationError };
 
 export interface Task {
   id: string;
   title: string;
   microtasks: Array<{ text: string; done: boolean }>;
-  completed: boolean;
+  status: TaskStatus;
+  goodMs: number;
+  badContinuousMs: number;
   growthUnits: number;
+  activeElapsedMs: number;
   stage: 1 | 2 | 3 | 4;
   mood: "normal" | "sad" | "sick" | "dead";
   maxLevelRewardClaimed: boolean;
+  fieldIndex: number;
+  slotIndex: number;
 }
 
 export interface AchievementState {
@@ -53,32 +72,253 @@ export const EMPTY_REWARD_STATE: RewardState = {
   rewardedFocus30Steps: 0
 };
 
-export function derivePaused(manualPause: boolean, idleState: "active" | "idle" | "locked", focused: boolean): boolean {
-  return manualPause || idleState !== "active" || !focused;
+export function createEmptyGameState(): GameState {
+  return {
+    tasks: [],
+    activeTaskId: null,
+    points: 0,
+    inventory: [],
+    completedStreak: 0,
+    achievements: {
+      focus10Count: 0,
+      taskStreakRewardCount: 0,
+      maxLevelRewardCount: 0
+    }
+  };
 }
 
-export function createTask(id: string, title: string, microtasks: string[]): Task {
+export function createEmptyRewardState(): RewardState {
+  return {
+    goodContinuousMs: 0,
+    rewardedFocus10Steps: 0,
+    rewardedFocus30Steps: 0
+  };
+}
+
+export function isTaskCompleted(task: Task): boolean {
+  return task.status === "completed";
+}
+
+export function isTaskActive(task: Task): boolean {
+  return task.status === "active";
+}
+
+export function isTaskPaused(task: Task): boolean {
+  return task.status === "paused";
+}
+
+export function derivePaused(
+  manualPause: boolean,
+  idleState: "active" | "idle" | "locked",
+  focused: boolean,
+  hasActiveTask: boolean
+): boolean {
+  return manualPause || idleState !== "active" || !focused || !hasActiveTask;
+}
+
+export function createTask(
+  id: string,
+  title: string,
+  microtasks: string[],
+  status: TaskStatus = "paused",
+  placement: FarmPlacement = { fieldIndex: 0, slotIndex: 0 }
+): Task {
   return {
     id,
     title,
-    microtasks: microtasks.map((text) => ({ text, done: false })),
-    completed: false,
+    microtasks: sanitizeChecklistItems(microtasks).map((text) => ({ text, done: false })),
+    status,
+    goodMs: 0,
+    badContinuousMs: 0,
     growthUnits: 0,
+    activeElapsedMs: 0,
     stage: 1,
     mood: "normal",
-    maxLevelRewardClaimed: false
+    maxLevelRewardClaimed: false,
+    fieldIndex: placement.fieldIndex,
+    slotIndex: placement.slotIndex
   };
+}
+
+export function hasActiveTask(game: GameState): boolean {
+  return game.activeTaskId !== null;
+}
+
+export function getActiveTask(game: GameState): Task | undefined {
+  if (!game.activeTaskId) {
+    return undefined;
+  }
+
+  return game.tasks.find((task) => task.id === game.activeTaskId && isTaskActive(task));
+}
+
+export function getResumableTasks(game: GameState): Task[] {
+  return game.tasks.filter(isTaskPaused);
+}
+
+export function trackerStateFromTask(task: Task): TrackingState {
+  return {
+    goodMs: task.goodMs,
+    badContinuousMs: task.badContinuousMs,
+    growthUnits: task.growthUnits,
+    activeElapsedMs: task.activeElapsedMs,
+    mood: task.mood,
+    paused: false
+  };
+}
+
+function resolveTaskPlacement(
+  game: GameState,
+  preferredPlacement?: FarmPlacement | null
+): FarmPlacement | { ok: false; error: TaskOperationError } {
+  if (preferredPlacement) {
+    if (!isValidFarmPlacement(preferredPlacement) || isFarmSlotOccupied(game.tasks, preferredPlacement)) {
+      return { ok: false, error: "task-slot-unavailable" };
+    }
+
+    return preferredPlacement;
+  }
+
+  const placement = findFirstFreeFarmSlot(game.tasks);
+  if (!placement) {
+    return { ok: false, error: "farm-full" };
+  }
+
+  return placement;
+}
+
+export function createAndActivateTask(
+  game: GameState,
+  id: string,
+  title: string,
+  microtasks: string[],
+  preferredPlacement?: FarmPlacement | null
+): TaskOperationResult {
+  if (hasActiveTask(game)) {
+    return { ok: false, error: "active-task-exists" };
+  }
+
+  const placement = resolveTaskPlacement(game, preferredPlacement);
+  if (!("fieldIndex" in placement)) {
+    return placement;
+  }
+
+  const task = createTask(id, title, microtasks, "active", placement);
+
+  return {
+    ok: true,
+    task,
+    game: {
+      ...game,
+      tasks: [task, ...game.tasks],
+      activeTaskId: task.id
+    }
+  };
+}
+
+export function activateTask(game: GameState, taskId: string): TaskOperationResult {
+  const task = game.tasks.find((item) => item.id === taskId);
+
+  if (!task) {
+    return { ok: false, error: "task-not-found" };
+  }
+
+  if (isTaskCompleted(task)) {
+    return { ok: false, error: "task-completed" };
+  }
+
+  if (game.activeTaskId && game.activeTaskId !== taskId) {
+    return { ok: false, error: "active-task-exists" };
+  }
+
+  const tasks: Task[] = game.tasks.map((item) => {
+    if (isTaskCompleted(item)) {
+      return item;
+    }
+
+    return {
+      ...item,
+      status: item.id === taskId ? ("active" as const) : ("paused" as const)
+    };
+  });
+
+  const activeTask = tasks.find((item) => item.id === taskId);
+  if (!activeTask) {
+    return { ok: false, error: "task-not-found" };
+  }
+
+  return {
+    ok: true,
+    task: activeTask,
+    game: {
+      ...game,
+      tasks,
+      activeTaskId: taskId
+    }
+  };
+}
+
+export function pauseTask(game: GameState, taskId: string): TaskOperationResult {
+  const task = game.tasks.find((item) => item.id === taskId);
+
+  if (!task) {
+    return { ok: false, error: "task-not-found" };
+  }
+
+  if (isTaskCompleted(task)) {
+    return { ok: false, error: "task-completed" };
+  }
+
+  if (game.activeTaskId !== taskId || !isTaskActive(task)) {
+    return { ok: false, error: "task-not-active" };
+  }
+
+  const tasks = game.tasks.map((item) =>
+    item.id === taskId
+      ? {
+          ...item,
+          status: "paused" as const
+        }
+      : item
+  );
+
+  const pausedTask = tasks.find((item) => item.id === taskId);
+  if (!pausedTask) {
+    return { ok: false, error: "task-not-found" };
+  }
+
+  return {
+    ok: true,
+    task: pausedTask,
+    game: {
+      ...game,
+      tasks,
+      activeTaskId: null
+    }
+  };
+}
+
+export function pauseActiveTask(game: GameState): TaskOperationResult {
+  const activeTask = getActiveTask(game);
+  if (!activeTask) {
+    return { ok: false, error: "task-not-active" };
+  }
+
+  return pauseTask(game, activeTask.id);
 }
 
 export function syncActiveTaskFromTracker(game: GameState, tracker: TrackingState): GameState {
   if (!game.activeTaskId) return game;
 
   const tasks = game.tasks.map((task) => {
-    if (task.id !== game.activeTaskId || task.completed) return task;
+    if (task.id !== game.activeTaskId || !isTaskActive(task)) return task;
 
     const synced = {
       ...task,
+      goodMs: tracker.goodMs,
+      badContinuousMs: tracker.badContinuousMs,
       growthUnits: tracker.growthUnits,
+      activeElapsedMs: tracker.activeElapsedMs,
       stage: growthToStage(tracker.growthUnits),
       mood: tracker.mood
     };
@@ -87,7 +327,7 @@ export function syncActiveTaskFromTracker(game: GameState, tracker: TrackingStat
   });
 
   const next: GameState = { ...game, tasks };
-  const active = next.tasks.find((task) => task.id === next.activeTaskId && !task.completed);
+  const active = getActiveTask(next);
 
   if (active && active.stage === 4 && !active.maxLevelRewardClaimed) {
     active.maxLevelRewardClaimed = true;
@@ -139,9 +379,9 @@ export function completeTask(game: GameState, taskId: string): GameState {
   };
 
   const task = next.tasks.find((item) => item.id === taskId);
-  if (!task || task.completed) return game;
+  if (!task || isTaskCompleted(task)) return game;
 
-  task.completed = true;
+  task.status = "completed";
   task.stage = 4;
   task.mood = "normal";
 
@@ -158,4 +398,37 @@ export function completeTask(game: GameState, taskId: string): GameState {
   }
 
   return next;
+}
+
+export function normalizeStoredTask(task: Partial<Task> & Pick<Task, "id" | "title">, activeTaskId: string | null): Task {
+  const completed = task.status === "completed";
+  const isActive = !completed && (task.status === "active" || task.id === activeTaskId);
+  const growthUnits = task.growthUnits ?? 0;
+  const activeElapsedMs = task.activeElapsedMs ?? task.goodMs ?? 0;
+  const mood = task.mood ?? "normal";
+
+  let badContinuousMs = task.badContinuousMs ?? 0;
+  if (badContinuousMs === 0) {
+    if (mood === "dead") {
+      badContinuousMs = DEFAULT_THRESHOLDS.deadMs;
+    } else if (mood === "sick") {
+      badContinuousMs = DEFAULT_THRESHOLDS.sickMs;
+    }
+  }
+
+  return {
+    id: task.id,
+    title: task.title,
+    microtasks: (task.microtasks ?? []).map((item) => ({ text: item.text, done: Boolean(item.done) })),
+    status: completed ? "completed" : isActive ? "active" : "paused",
+    goodMs: task.goodMs ?? growthUnits * DEFAULT_THRESHOLDS.growthMs,
+    badContinuousMs,
+    growthUnits,
+    activeElapsedMs,
+    stage: completed ? 4 : growthToStage(growthUnits),
+    mood: completed ? "normal" : mood,
+    maxLevelRewardClaimed: task.maxLevelRewardClaimed ?? false,
+    fieldIndex: task.fieldIndex ?? 0,
+    slotIndex: task.slotIndex ?? 0
+  };
 }
